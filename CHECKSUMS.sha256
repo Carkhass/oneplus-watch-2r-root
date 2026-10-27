@@ -1,0 +1,14 @@
+# Empreintes SHA-256 des images de référence OPWWE234.
+# Les binaires NE SONT PAS inclus dans ce dépôt (firmware OnePlus).
+# Source officielle (Google) ; télécharger soi-même et vérifier avec : sha256sum <fichier>
+
+# OTA complète OPWWE234 A.144 (Android 13, Non-A/B, build TWR7.231113.001.OPWWE234_11_A.144.250623)
+# URL : https://android.googleapis.com/packages/ota-api/package/3be243e5cdd99176d4e08e9a79476d9486910a93.zip
+1da56646623f9d56471efaf698d04e05dd77dbe30200ee562aca321fc02d1132  ota_a144.zip
+
+# init_boot.img extrait de cette OTA (8 388 608 o = 0x800000, header ANDROID! v4, kernel_size=0)
+# -> baseline de restauration / amorce de root (à patcher Magisk SUR la montre)
+7c8dc5310e5484f9c40053fcc1936faf5af246a2a8d55dae31a2c6a486305af7  init_boot.img
+
+# boot.img extrait de cette OTA (100 663 296 o = 0x6000000) — NE PAS flasher (kernel)
+1a15971edabaadb02c82ccd78c9e0568763f8dab0a1e776f8268faf6579ffad2  boot.img

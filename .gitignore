@@ -1,0 +1,30 @@
+# === Firmwares OnePlus — NE JAMAIS committer/redistribuer ===
+*.img
+*.zip
+*.bin
+*.dex
+*.apk
+*.elf
+*.mbn
+ota-*/
+**/extracted/
+firmware-update/
+
+# === Sauvegardes de partitions (dumps) ===
+backups/
+dumps/
+
+# === Données perso / locales ===
+*.local
+secrets*
+*-perso.*
+
+# === Décompilation / sorties d'outils ===
+decomp/
+*.png
+__pycache__/
+*.pyc
+
+# === OS ===
+.DS_Store
+Thumbs.db
