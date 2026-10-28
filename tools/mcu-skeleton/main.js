@@ -1,4 +1,4 @@
-// Squelette de rendu MCU pour un cadran WFF tiers « Yahnfit // Data-Stream ».
+// Squelette de rendu MCU pour un cadran WFF tiers.
 // À ADAPTER : positions, images, données. Écrit from scratch pour l'API du moteur MCU
 // (type LVGL) observée par rétro-ingénierie — aucun code OnePlus copié.
 // Interopérabilité / usage personnel. Non testé sur matériel (exige root + SysUI patché).
@@ -12,8 +12,8 @@
 //   WatchfaceJump.{bigCoreApp,bigCoreFace}
 require('js_asset.js');
 
-var datastream = {
-    name: 'datastream',
+var mywatchface = {
+    name: 'mywatchface',
 
     onCreate: function(par, hor_res, ver_res) {
         var page = View(par, 0, 0, hor_res, ver_res);
@@ -95,5 +95,5 @@ var datastream = {
     onDestory: function(event) { return 0; }
 };
 
-!subwm.registerSubWindow(datastream);
-datastream = null;
+!subwm.registerSubWindow(mywatchface);
+mywatchface = null;
