@@ -65,7 +65,7 @@ puis classer :
 1. Setup Wear OS → se connecter au **même compte Google** (FRP).
 2. Ré-appairer à **OHealth** → laisser resync santé.
 3. Laisser le **Play Store** réinstaller les apps.
-4. **Sideload** le cadran datastream + reconfigurer complications.
+4. **Sideload** le cadran WFF tiers + reconfigurer complications.
 5. Ressaisir **Wi-Fi** et les réglages notés (section D).
 
 > Rappel sécurité root : ne flasher que `init_boot`, jamais boot/abl/xbl/vbmeta.
