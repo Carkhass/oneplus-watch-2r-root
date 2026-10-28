@@ -38,7 +38,24 @@ système A.192), qui exige ce déverrouillage.
 | `docs/init_boot-source-et-verification.md` | Source officielle de l'`init_boot` + vérifications |
 | `docs/mcu-offload-faisabilite.md` | Pourquoi le rendu MCU d'un cadran tiers exige le root (objectif du projet) |
 | `tools/picbin.py` | Décodeur de l'atlas d'images MCU `pic.bin` (ARGB4444 / BGRA8888) |
+| `tools/mkpicbin.py` | Encodeur d'atlas `pic.bin` (PNG → atlas MCU) |
+| `tools/mcu-skeleton/` | Squelette `main.js` + `js_asset.js` du rendu MCU + pipeline |
 | `CHECKSUMS.sha256` | Empreintes des images de référence (binaires **non** inclus) |
+
+## Légal & éthique
+
+- **Rétro-ingénierie d'interopérabilité.** Le but est de faire interopérer *mon propre*
+  cadran avec le MCU de *ma propre* montre — un usage que le droit UE/FR autorise
+  explicitement (directive 2009/24/CE art. 6 ; CPI art. L122-6-1).
+- **Déverrouillage par le mécanisme officiel.** Le root passe par
+  `fastboot flashing unlock`, fourni et autorisé par OnePlus (ce n'est ni une faille ni un
+  contournement de protection). Il efface l'appareil et **annule la garantie**.
+- **Aucune redistribution.** Ce dépôt ne contient aucun firmware, binaire, code décompilé
+  ou asset OnePlus/OPPO/Google — seulement des analyses, références, URLs publiques et
+  sommes de contrôle. Les firmwares sont exclus par `.gitignore`.
+- **Risques.** Flasher une montre peut la rendre inutilisable. Appareil personnel, hors
+  garantie, à vos risques. Rien ici n'est un conseil juridique.
+- **Licence** : code et docs originaux sous [MIT](LICENSE).
 
 ## Crédits / inspiration
 
