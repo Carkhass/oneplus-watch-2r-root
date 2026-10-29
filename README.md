@@ -10,24 +10,20 @@ officiels OnePlus.
 > URLs publiques et des sommes de contrôle. Rooter / flasher peut effacer les données ou
 > briquer l'appareil. Appareil hors garantie, à vos risques.
 
-## État d'avancement
+## État d'avancement — ✅ OBJECTIF ATTEINT
 
-Travail préparatoire **terminé et validé en lecture seule / non destructif** :
+**Un cadran WFF tiers est rendu par le MCU basse conso de la OnePlus Watch 2R en veille**,
+comme un cadran officiel OnePlus. Chaîne complète réalisée et vérifiée :
 
-- ✅ Chaîne « dual-engine » comprise : c'est SysUI qui pousse les ressources MCU, derrière
-  un **verrou de signature OPPO** → un cadran tiers ne peut pas être rendu par le MCU
-  **sans root** (voir `docs/mcu-offload-faisabilite.md`).
-- ✅ `init_boot.img` officiel du bon modèle localisé (OTA Google A.144) et vérifié
-  (taille 0x800000, header v4 split-GKI). Source + checksums : `CHECKSUMS.sha256` et
-  `docs/init_boot-source-et-verification.md`.
-- ✅ **Test fastboot non destructif réussi** sur la montre : fastboot accessible via le
-  dock USB, `partition-size:init_boot = 0x800000`, `flashing get_unlock_ability = 1`
-  (déverrouillage autorisé), `fastboot reboot` OK. Détails : `docs/methode-root-ota-retour-arriere.md`.
+- ✅ **Root** : bootloader déverrouillé + `init_boot` A.144 patché Magisk (qui amorce A.192).
+- ✅ **Verrou de signature neutralisé** : Zygisk + LSPosed + un **module Xposed maison** qui
+  force `wk.b.f()` de SysUI à renvoyer `false` pour notre cadran (sans re-signer SysUI).
+- ✅ **Assets MCU** du cadran (atlas `pic.bin` + `main.js`) empaquetés par `RsWfPacker`
+  (`wf_packet result 0`) et **transférés au MCU** (`onTransferCompleted errorCode 0`).
+- ✅ **Rendu MCU confirmé** en veille (`BmSwitchToMcu … third wf`), visuellement et par logs.
 
-**Pas encore fait** (point de non-retour) : le déverrouillage du bootloader
-(`fastboot flashing unlock`, **efface la montre**) et le flash de l'`init_boot` patché
-Magisk. La seule inconnue restante est le test de boot réel (init_boot A.144 amorçant le
-système A.192), qui exige ce déverrouillage.
+Méthode détaillée : [`docs/hook-sysui-mcu.md`](docs/hook-sysui-mcu.md). C'est, à notre
+connaissance, la première démonstration documentée sur l'OPWWE234.
 
 ## Contenu
 
@@ -36,10 +32,14 @@ système A.192), qui exige ce déverrouillage.
 | `docs/methode-root-ota-retour-arriere.md` | Méthode complète : canal fastboot, règle d'or (ne flasher que `init_boot`), filets de récupération, OTA & re-root, piège 32-bit Magisk |
 | `docs/checklist-sauvegarde.md` | À sauvegarder avant le wipe (compte Google/FRP, OHealth, apps, réglages) |
 | `docs/init_boot-source-et-verification.md` | Source officielle de l'`init_boot` + vérifications |
-| `docs/mcu-offload-faisabilite.md` | Pourquoi le rendu MCU d'un cadran tiers exige le root (objectif du projet) |
+| `docs/mcu-offload-faisabilite.md` | Pourquoi le rendu MCU d'un cadran tiers exige le root |
+| **`docs/hook-sysui-mcu.md`** | **Méthode complète du hook MCU (Zygisk → LSPosed → module Xposed → assets → rendu), avec preuves** |
+| `docs/procedure-deverrouillage-root.md` | Déverrouillage + patch Magisk, avec repères de temps |
+| `docs/strategie-cadran-mcu.md` | Ce que le code confirme : un WFF peut fournir un rendu MCU |
 | `tools/picbin.py` | Décodeur de l'atlas d'images MCU `pic.bin` (ARGB4444 / BGRA8888) |
 | `tools/mkpicbin.py` | Encodeur d'atlas `pic.bin` (PNG → atlas MCU) |
 | `tools/mcu-skeleton/` | Squelette `main.js` + `js_asset.js` du rendu MCU + pipeline |
+| **`tools/xposed-mcu-unlock/`** | **Module Xposed (hook `wk.b.f`) : sources + build sans Gradle** |
 | `CHECKSUMS.sha256` | Empreintes des images de référence (binaires **non** inclus) |
 
 ## Légal & éthique
