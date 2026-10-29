@@ -1,12 +1,14 @@
 # xposed-mcu-unlock — module LSPosed
 
-Module Xposed minimal qui neutralise le verrou de signature de SysUI (`wk.b.f()`) pour
-autoriser **un** cadran WFF tiers au rendu MCU. Voir la procédure complète dans
-[`../../docs/hook-sysui-mcu.md`](../../docs/hook-sysui-mcu.md).
+Module Xposed minimal qui autorise **un** cadran WFF tiers au rendu MCU, via **deux** hooks :
+- `wk.b.f()` → `false` (neutralise le verrou de signature) ;
+- `he.i.c()` → gère le `className` null d'un WFF (évite un NPE qui casserait la galerie).
+Voir la procédure complète dans [`../../docs/hook-sysui-mcu.md`](../../docs/hook-sysui-mcu.md).
 
 ## Adapter avant de compiler
 - `src/com/example/mcuunlock/Hook.java` → `TARGET_WATCHFACE` = le packageName de **votre**
-  cadran, et `CLASS` si le nom obfusqué `wk.b` a changé (cf. le doc).
+  cadran. Si les noms obfusqués `wk.b` / `he.i` ont changé après une MAJ de SysUI, les éditer
+  dans `Hook.java` (cf. le doc pour les retrouver).
 
 ## Compiler
 ```powershell

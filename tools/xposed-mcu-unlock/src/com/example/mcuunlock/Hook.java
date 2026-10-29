@@ -7,19 +7,26 @@ import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
 /**
- * Module Xposed (LSPosed) — neutralise le verrou de signature de SysUI pour autoriser
- * un cadran WFF tiers au rendu MCU (OnePlus Watch 2R / OPWWE234).
+ * Module Xposed (LSPosed) — autorise UN cadran WFF tiers au rendu MCU de la OnePlus Watch 2R
+ * (OPWWE234), en deux hooks ciblés sur le SEUL paquet TARGET_WATCHFACE (aucun effet ailleurs).
  *
- * Cible : com.oplus.wearable.sysui, méthode obfusquée wk.b.f(String) qui renvoie true pour
- * un paquet NON signé OPPO (→ mappé sur l'UUID sentinelle, pas de rendu MCU). On force f()
- * à renvoyer false UNIQUEMENT pour notre paquet, pour qu'il soit traité comme officiel et
- * que ses assets mcu-466x466/ soient empaquetés (RsWfPacker) et poussés au MCU.
+ * Hook 1 — wk.b.f(packageName) : SysUI renvoie true pour un paquet NON signé OPPO (→ cadran
+ *   mappé sur l'UUID sentinelle, pas de rendu MCU, et marqué « incompatible » dans la galerie).
+ *   On force false pour notre paquet, PARTOUT : il est alors traité comme un cadran officiel
+ *   (ses assets mcu-466x466/ sont empaquetés par RsWfPacker et poussés au MCU, et il est marqué
+ *   « compatible » dans la galerie).
  *
- * À ADAPTER :
- *   - TARGET_WATCHFACE : le packageName de VOTRE cadran.
- *   - CLASS : le nom obfusqué peut changer à chaque MAJ de SysUI. Pour le retrouver :
- *     décompiler HeyClockworkSysUi.apk et chercher la méthode qui compare le MD5 du
- *     certificat de signature aux constantes OPPO (6EBAE4… / 75AE3B…) et renvoie un booléen.
+ * Hook 2 — he.i.c(package, className) : INDISPENSABLE. Quand wk.b.f renvoie false, SysUI appelle
+ *   he.i.c qui fait Intent.setClassName(package, className) pour lire le POWER_CONSUMPTION_LEVEL
+ *   du service natif du cadran. Un WFF n'a PAS de service natif → className est null →
+ *   ComponentName NPE « class name is null » qui casse la liste MCU ET la galerie. On intercepte
+ *   ce cas et on renvoie la valeur par défaut 1 (cf. he/i.java), sans planter.
+ *
+ * Sans hook 2, forcer wk.b.f partout casse la galerie (NPE). Les deux ensemble donnent
+ *   MCU + galerie + label « compatible », sans effet de bord (vérifié, édition du cadran incluse).
+ *
+ * À ADAPTER : TARGET_WATCHFACE (votre packageName). Les noms obfusqués wk.b / he.i peuvent
+ * changer après une MAJ de SysUI (les retrouver en décompilant HeyClockworkSysUi.apk).
  *
  * Interopérabilité / usage personnel. Aucun composant OnePlus n'est redistribué.
  */
@@ -27,25 +34,36 @@ public class Hook implements IXposedHookLoadPackage {
 
     private static final String SYSUI = "com.oplus.wearable.sysui";
     private static final String TARGET_WATCHFACE = "your.watchface.package"; // <-- À REMPLACER
-    private static final String CLASS = "wk.b";   // nom obfusqué (vérifier selon la version)
-    private static final String METHOD = "f";
 
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) {
         if (!SYSUI.equals(lpparam.packageName)) return;
+        ClassLoader cl = lpparam.classLoader;
+
+        // Hook 1 : déblocage du verrou de signature (partout, pour notre paquet seulement).
         try {
-            XposedHelpers.findAndHookMethod(CLASS, lpparam.classLoader, METHOD, String.class,
-                new XC_MethodHook() {
-                    protected void afterHookedMethod(MethodHookParam param) {
-                        Object arg = (param.args != null && param.args.length > 0) ? param.args[0] : null;
-                        if (TARGET_WATCHFACE.equals(arg)) {
-                            param.setResult(Boolean.FALSE);   // false = « est OPPO » => autorisé au MCU
-                            XposedBridge.log("[MCUUnlock] " + CLASS + "." + METHOD + "(" + arg + ") -> false");
-                        }
-                    }
-                });
-            XposedBridge.log("[MCUUnlock] hook installe dans SysUI (" + CLASS + "." + METHOD + ")");
+            XposedHelpers.findAndHookMethod("wk.b", cl, "f", String.class, new XC_MethodHook() {
+                protected void afterHookedMethod(MethodHookParam param) {
+                    Object arg = (param.args != null && param.args.length > 0) ? param.args[0] : null;
+                    if (TARGET_WATCHFACE.equals(arg)) param.setResult(Boolean.FALSE);
+                }
+            });
+            XposedBridge.log("[MCUUnlock] hook1 wk.b.f installe");
         } catch (Throwable t) {
-            XposedBridge.log("[MCUUnlock] echec du hook: " + t);
+            XposedBridge.log("[MCUUnlock] hook1 echec: " + t);
+        }
+
+        // Hook 2 : évite le NPE Intent.setClassName(pkg, null) pour un WFF (pas de service natif).
+        try {
+            XposedHelpers.findAndHookMethod("he.i", cl, "c", String.class, String.class, new XC_MethodHook() {
+                protected void beforeHookedMethod(MethodHookParam param) {
+                    if (TARGET_WATCHFACE.equals(param.args[0]) && param.args[1] == null) {
+                        param.setResult(Integer.valueOf(1)); // POWER_CONSUMPTION_LEVEL par défaut (he/i.java)
+                    }
+                }
+            });
+            XposedBridge.log("[MCUUnlock] hook2 he.i.c installe");
+        } catch (Throwable t) {
+            XposedBridge.log("[MCUUnlock] hook2 echec (signature ?): " + t);
         }
     }
 }

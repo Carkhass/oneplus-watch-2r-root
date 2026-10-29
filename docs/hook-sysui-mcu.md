@@ -54,9 +54,20 @@ Sur Wear OS (écran rond) l'UI du manager est inutilisable — on pilote tout pa
 ## Étape 3 — Compiler le module Xposed
 Sources + build sans Gradle dans [`../tools/xposed-mcu-unlock/`](../tools/xposed-mcu-unlock/).
 Adapter `TARGET_WATCHFACE` (votre package) dans `Hook.java`, puis `./build.ps1`.
-Le hook cible la classe obfusquée `wk.b` / méthode `f(String)` : si le nom change après une
-MAJ de SysUI, le retrouver en décompilant `HeyClockworkSysUi.apk` (la méthode qui compare le
-MD5 du certificat aux constantes OPPO `6EBAE4…`/`75AE3B…`).
+
+Le module pose **deux** hooks (ciblés sur votre seul paquet, aucun effet ailleurs) :
+- **`wk.b.f(String)`** (verrou de signature) → forcé à `false` **partout** : le cadran est
+  traité comme officiel → poussé au MCU **et** marqué « compatible » dans la galerie.
+- **`he.i.c(package, className)`** → **indispensable**. Quand `wk.b.f` renvoie `false`, SysUI
+  appelle `he.i.c` qui fait `Intent.setClassName(package, className)` pour lire le
+  `POWER_CONSUMPTION_LEVEL` du **service natif** du cadran. Un WFF n'en a pas → `className`
+  null → `ComponentName` NPE « class name is null » qui casse la liste MCU **et** la galerie.
+  On intercepte ce cas et on renvoie la valeur par défaut `1`. **Sans ce hook, forcer
+  `wk.b.f` partout casse la galerie.**
+
+Les noms obfusqués `wk.b` / `he.i` peuvent changer après une MAJ de SysUI : les retrouver en
+décompilant `HeyClockworkSysUi.apk` (`wk.b.f` compare le MD5 du certificat aux constantes
+OPPO `6EBAE4…`/`75AE3B…` ; `he.i.c` lit `heytap.wearable.watchface.POWER_CONSUMPTION_LEVEL`).
 
 ## Étape 4 — Installer + activer le module (CLI)
 ```sh
@@ -87,10 +98,29 @@ Preuves d'un push réussi (observées) :
 [MCUUnlock] wk.b.f(<votre_pkg>) -> false
 [RsWfPacker_pack] wf_packet result is 0          <- format pic.bin/setting.bin accepté
 [WFResourcesToMcuManager][startSendWfResource] doPackResult = 0
+[MCUUnlock] hook2 he.i.c(<votre_pkg>, null) -> 1   <- NPE evite (WFF sans service natif)
 [McuFileHelper] onTransferCompleted: ... errorCode 0     <- transfert MCU OK
 [BmManager][BmSwitchToMcu] ... BmState: third wf or widget   <- bascule MCU en veille
 ```
 Test final : mettre la montre en veille (AOD/poignet baissé) → le MCU rend le cadran.
+
+## ⚠️ Piège : l'AOD programmé (à connaître absolument)
+
+Le MCU ne rend le cadran en veille **que si l'écran permanent (AOD) est actif à ce
+moment-là**. Or, par défaut, l'AOD de la OnePlus Watch 2R est **programmé sur une plage
+horaire** (`AutoAodController` ; réglages `settings system start_time_aod` / `over_time_aod`,
+en minutes — défaut **480 = 8h** à **1380 = 23h**). **Hors de cette plage (ex. la nuit),
+l'écran reste noir en veille pour TOUS les cadrans** — ce n'est pas un bug du hook.
+
+**Recommandation : désactiver la programmation de l'AOD** (le passer en « toujours activé »)
+pour éviter toute confusion, via les réglages de la montre, ou :
+```sh
+settings put system start_time_aod 0
+settings put system over_time_aod 1440      # 24h/24
+settings put secure doze_always_on 1
+```
+Et noter que le MCU ne bascule **jamais quand la montre charge sur le dock** (écran de charge).
+Donc pour tester : **hors dock, au poignet, AOD actif**.
 
 ## Récupération / désactivation (filets)
 - Désactiver le module : `$CLI modules disable com.example.mcuunlock` puis reboot.
